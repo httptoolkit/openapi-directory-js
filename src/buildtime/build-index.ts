@@ -9,6 +9,12 @@ export function buildApiIndex(rootPath: string) {
 }
 
 export function buildTrie(map: { [key: string]: string }): TrieData {
+    return optimizeTrie(buildNaiveTrie(map));
+}
+
+// Build a simple naive trie. One level per char, string nodes at the leaves,
+// and '' keys for leaf nodes half way down paths.
+export function buildNaiveTrie(map: { [key: string]: string }): TrieData {
     const root = <TrieData>{};
 
     _.forEach(map, (value, key) => {
@@ -48,4 +54,34 @@ export function buildTrie(map: { [key: string]: string }): TrieData {
     });
 
     return root;
+}
+
+// Compress the trie. Any node with only one child can be combined
+// with the child node instead. This results in keys of >1 char, but
+// all keys in any given object still always have the same length,
+// except for terminated strings.
+export function optimizeTrie(trie: TrieData): TrieData {
+    if (_.isString(trie)) return trie;
+
+    const keys = Object.keys(trie);
+    if (keys.length === 0) return trie;
+    if (keys.length === 1) {
+        const [key] = keys;
+        const child = trie[key];
+
+        if (_.isString(child)) return trie;
+
+        // Return the only child, with every key prefixed with this key
+        const newChild = optimizeTrie(
+            _.mapKeys(child, (_value, childKey) => key + childKey)
+        );
+
+        return newChild;
+    } else {
+        // DFS through the child values
+        return _.mapValues(trie, (child) => {
+            if (_.isString(child)) return child;
+            else return optimizeTrie(child!);
+        });
+    }
 }
