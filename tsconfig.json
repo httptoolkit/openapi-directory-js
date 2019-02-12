@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "outDir": "dist",
+        "module": "commonjs",
+        "sourceMap": true,
+        "strict": true,
+    },
+    "compileOnSave": true,
+    "buildOnSave": true,
+    "include": [
+        "custom-typings/*.d.ts",
+        "src/**/*.ts",
+    ]
+}

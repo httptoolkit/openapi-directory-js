@@ -1,0 +1,44 @@
+{
+  "name": "openapi-directory",
+  "version": "1.0.0",
+  "description": "Building & bundling https://github.com/APIs-guru/openapi-directory for easy use from JS",
+  "main": "dist/runtime/index.js",
+  "files": [
+    "api/",
+    "dist/runtime/"
+  ],
+  "scripts": {
+    "prepare": "napa APIs-guru/openapi-directory",
+    "build": "tsc && node dist/buildtime/build-all.js",
+    "test": "TS_NODE_FILES=true mocha -r ts-node/register 'test/**/*.spec.ts'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/httptoolkit/openapi-directory-js.git"
+  },
+  "keywords": [
+    "openapi",
+    "directory",
+    "collection",
+    "apis",
+    "swagger"
+  ],
+  "author": "Tim Perry <tim@httptoolkit.tech>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/httptoolkit/openapi-directory-js/issues"
+  },
+  "homepage": "https://github.com/httptoolkit/openapi-directory-js#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/lodash": "^4.14.120",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^11.9.0",
+    "chai": "^4.2.0",
+    "lodash": "^4.17.11",
+    "mocha": "^5.2.0",
+    "napa": "^3.0.0",
+    "ts-node": "^8.0.2",
+    "typescript": "^3.3.3"
+  }
+}
