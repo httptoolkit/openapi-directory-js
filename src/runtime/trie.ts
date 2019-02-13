@@ -12,7 +12,7 @@ export class Trie {
 
     constructor(private root: TrieData) { }
 
-    private getLongestMatchingPrefix(key: string) {
+    private _getLongestMatchingPrefix(key: string) {
         let remainingKey = key;
         let node: TrieData | undefined = this.root;
 
@@ -45,7 +45,7 @@ export class Trie {
      * Returns undefined if no match can be found.
      */
     get(key: string): string | undefined {
-        const searchResult = this.getLongestMatchingPrefix(key);
+        const searchResult = this._getLongestMatchingPrefix(key);
 
         if (!searchResult) return undefined;
 
@@ -67,7 +67,7 @@ export class Trie {
      * Returns undefined if no match can be found.
      */
     getMatchingPrefix(key: string): string | undefined {
-        const searchResult = this.getLongestMatchingPrefix(key);
+        const searchResult = this._getLongestMatchingPrefix(key);
 
         if (!searchResult) return undefined;
 

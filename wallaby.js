@@ -8,6 +8,7 @@ module.exports = (wallaby) => {
       '!test/**/*.spec.ts'
     ],
     tests: [
+      '!test/integration.spec.ts',
       'test/**/*.spec.ts'
     ],
 
