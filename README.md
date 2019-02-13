@@ -16,7 +16,13 @@ That means you can import them, and immediately & consistently start using them.
 
 ## How to use it
 
-All OpenAPI specs can be required with:
+First up, install it with:
+
+```bash
+npm install openapi-directory
+```
+
+All OpenAPI specs can be now required with:
 
 ```js
 const spec = require('openapi-directory/api/<spec-id>.json');
