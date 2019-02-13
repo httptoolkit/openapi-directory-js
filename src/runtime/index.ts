@@ -4,6 +4,8 @@
 
 import { Trie } from "./trie";
 
+export * from 'openapi3-ts/dist/model';
+
 const trieData = require('../../api/_index.json');
 const apiIndex = new Trie(trieData);
 
