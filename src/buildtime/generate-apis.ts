@@ -39,16 +39,19 @@ function commonSubstring(...strings: string[]): string {
 }
 
 // Take a base URL, and a set of specs who all use the same base, and build an index
-// within that base, keyed by the unique paths that map to each spec.
+// within that base, keyed by the unique paths that map to each spec. This might still
+// end up with duplicates if two specs define literally the same endpoint, but it
+// gets much closer than just using the server URLs standalone.
 export function calculateCommonPrefixes(
     commonBase: string,
     specPaths: { [specId: string]: string[] }
-): { [url: string]: string } {
-    let index: { [url: string]: string } = {};
+): { [url: string]: string | string[] } {
+    let index: { [url: string]: string | string[] } = {};
 
     specPaths = _.mapValues(specPaths, (paths) =>
         // Drop templated values ({var}), and anything that follows them
         paths.map(path => path.replace(/{.*/, ''))
+        // TODO: Drop #fragments from URLs too?
     );
 
     _.forEach(specPaths, (paths, specId) => {
@@ -90,7 +93,11 @@ export function calculateCommonPrefixes(
         // Add each prefix that was found to an index of URLs within this base URL.
         prefixes.forEach((prefix) => {
             const baseUrl = commonBase.replace(/\/$/, '') + prefix;
-            index[baseUrl] = specId;
+            if (index[baseUrl]) {
+                index[baseUrl] = [specId].concat(index[baseUrl]);
+            } else {
+                index[baseUrl] = specId;
+            }
         });
     });
 
@@ -183,8 +190,13 @@ export async function generateApis(globs: string[]) {
         }))
     );
 
-    const dedupedIndex: _.Dictionary<string> = {};
-
+    // Try to split duplicate index values for the same key (e.g. two specs for the
+    // same base server URL) into separate values, by pulling common prefixes of the
+    // paths from the specs into their index keys.
+    //
+    // This helps, but it's not totally effective. TODO: We could do better if
+    // we used template params, by allowing inline wildcards in the trie somehow.
+    const dedupedIndex: _.Dictionary<string | string[]> = {};
     await Promise.all(
         _.map(index, async (specs, commonBase) => {
             if (typeof specs === 'string') {
