@@ -1,5 +1,7 @@
 # An OpenAPI Directory for JS
 
+> _Part of [HTTP Toolkit](https://httptoolkit.tech): powerful tools for building, testing & debugging HTTP(S)_
+
 This repo builds & bundles the [OpenAPI Directory](https://github.com/APIs-guru/openapi-directory), so you can easily find, require and use any OpenAPI spec from the directory in your JS projects.
 
 It provides files that can be individually required or remotely downloaded (via https://unpkg.com/openapi-directory/) for every API in the collection, and an index to quickly find the relevant OpenAPI spec for a given URL.
@@ -33,7 +35,7 @@ findApi('wikimedia.org/api/rest_v1/feed/availability');
 `findApi` takes a URL (host and path, _without_ the protocol) within any API, and will return either:
 
 * Undefined, if there is no matching APIs.
-* A string spec id, if there is exactly API that's relevant to that URL.
+* A string spec id, if there is exactly one API that's relevant to that URL.
 * A list of spec ids, in rare cases where multiple specs may cover the same URL.
 
 Alternatively if you know in advance which spec you want you can require it directly. The id for every spec in the directory is made up of the provider name, followed by a slash and the service name if a service name exists. Some example ids:
