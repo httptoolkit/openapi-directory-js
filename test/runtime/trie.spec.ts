@@ -64,6 +64,16 @@ describe('Trie searching', () => {
             expect(trie.getMatchingPrefix('a')).to.equal('value');
         });
 
+        it('can search a simple trie for an array value', () => {
+            const trie = new Trie(buildTrie({
+                'a': ['value1', 'value2']
+            }));
+
+            expect(trie.getMatchingPrefix('a')).to.deep.equal(
+                ['value1', 'value2']
+            );
+        });
+
         it('can search a trie for an exact value part way down a path', () => {
             const trie = new Trie(buildTrie({
                 'a': 'value',

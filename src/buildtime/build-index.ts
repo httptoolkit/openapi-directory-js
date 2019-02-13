@@ -1,21 +1,17 @@
 import * as _ from 'lodash';
-import { TrieData } from "../runtime/trie";
+import { TrieData, isLeafValue } from "../runtime/trie";
 
-export function buildApiIndex(rootPath: string) {
-    // Loop over every spec in rootPath
-    // Get their base paths
-    // Build a trie from the base paths
-    // Compress the trie
-}
-
-export function buildTrie(map: { [key: string]: string }): TrieData {
+export function buildTrie(map: { [key: string]: string | string[] }): TrieData {
     return optimizeTrie(buildNaiveTrie(map));
 }
 
 // Build a simple naive trie. One level per char, string nodes at the leaves,
 // and '' keys for leaf nodes half way down paths.
-export function buildNaiveTrie(map: { [key: string]: string }): TrieData {
+export function buildNaiveTrie(map: { [key: string]: string | string[] }): TrieData {
     const root = <TrieData>{};
+
+    // For each key, make a new level for each char in the key (or use an existing
+    // level), and place the leaf when we get to the end of the key.
 
     _.forEach(map, (value, key) => {
         let trie: TrieData = root;
@@ -25,7 +21,7 @@ export function buildNaiveTrie(map: { [key: string]: string }): TrieData {
             if (i === key.length - 1) {
                 // We're done - write our value into trie[char]
 
-                if (_.isString(nextStep)) {
+                if (isLeafValue(nextStep)) {
                     throw new Error('Duplicate key'); // Should really never happen
                 } else if (typeof nextStep === 'object') {
                     // We're half way down another key - add an empty branch
@@ -37,7 +33,7 @@ export function buildNaiveTrie(map: { [key: string]: string }): TrieData {
             } else {
                 // We have more to go - iterate into trie[char]
 
-                if (typeof nextStep === 'string') {
+                if (isLeafValue(nextStep)) {
                     // We're at what is currently a leaf value
                     // Transform it into a node with '' for the value.
                     nextStep = { '': nextStep };
@@ -69,7 +65,7 @@ export function optimizeTrie(trie: TrieData): TrieData {
         const [key] = keys;
         const child = trie[key];
 
-        if (_.isString(child)) return trie;
+        if (isLeafValue(child)) return trie;
 
         // Return the only child, with every key prefixed with this key
         const newChild = optimizeTrie(
@@ -78,9 +74,9 @@ export function optimizeTrie(trie: TrieData): TrieData {
 
         return newChild;
     } else {
-        // DFS through the child values
+        // Recursive DFS through the child values to optimize them in turn
         return _.mapValues(trie, (child) => {
-            if (_.isString(child)) return child;
+            if (isLeafValue(child)) return child;
             else return optimizeTrie(child!);
         });
     }

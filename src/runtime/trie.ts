@@ -1,11 +1,17 @@
+type TrieLeafValue = string | string[];
+
 type TrieValue =
     | TrieData
-    | string
+    | TrieLeafValue
     | undefined;
 
 export interface TrieData {
-    ''?: string;
+    ''?: TrieLeafValue;
     [nextKey: string]: TrieValue;
+}
+
+export function isLeafValue(value: any): value is TrieLeafValue {
+    return typeof value === 'string' || Array.isArray(value);
 }
 
 export class Trie {
@@ -24,7 +30,7 @@ export class Trie {
 
             const nextNode: TrieValue = node[keyToMatch];
 
-            if (typeof nextNode === 'string') {
+            if (isLeafValue(nextNode)) {
                 // We've reached the end of a key - if we're out of
                 // input, that's good, if not it's just a prefix.
                 return {
@@ -41,10 +47,10 @@ export class Trie {
     }
 
     /*
-     * Given a key, finds an exact match and returns the value.
+     * Given a key, finds an exact match and returns the value(s).
      * Returns undefined if no match can be found.
      */
-    get(key: string): string | undefined {
+    get(key: string): string | string[] | undefined {
         const searchResult = this._getLongestMatchingPrefix(key);
 
         if (!searchResult) return undefined;
@@ -60,13 +66,13 @@ export class Trie {
 
     /*
      * Given a key, finds the longest key that is a prefix of this
-     * key, and returns its value. I.e. for input 'abcdef', 'abc'
+     * key, and returns its value(s). I.e. for input 'abcdef', 'abc'
      * would match in preference to 'ab', and 'abcdefg' would never
      * be matched.
      *
      * Returns undefined if no match can be found.
      */
-    getMatchingPrefix(key: string): string | undefined {
+    getMatchingPrefix(key: string): string | string[] | undefined {
         const searchResult = this._getLongestMatchingPrefix(key);
 
         if (!searchResult) return undefined;

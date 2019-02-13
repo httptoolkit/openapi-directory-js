@@ -42,6 +42,18 @@ describe('Index generation', () => {
             }
         });
     });
+
+    it('can generate trie data including arrays', () => {
+        const trie = buildTrie({
+            'ab': ['hi', 'there'],
+            'c': 'bye'
+        });
+
+        expect(trie).to.deep.equal({
+            'a': { 'b': ['hi', 'there'] },
+            'c': 'bye'
+        });
+    });
 });
 
 describe('Naive trie generation', () => {
