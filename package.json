@@ -6,10 +6,12 @@
   "types": "dist/runtime/index.d.ts",
   "files": [
     "api/",
-    "dist/runtime/"
+    "dist/runtime/",
+    "openapi-directory.d.ts"
   ],
   "scripts": {
     "prepare": "napa APIs-guru/openapi-directory",
+    "prepack": "npm run build",
     "build": "tsc && node dist/buildtime/build-all.js",
     "test": "TS_NODE_FILES=true mocha -r ts-node/register 'test/**/*.spec.ts'"
   },
