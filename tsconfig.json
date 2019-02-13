@@ -2,6 +2,7 @@
     "compilerOptions": {
         "target": "es5",
         "outDir": "dist",
+        "declaration": true,
         "module": "commonjs",
         "sourceMap": true,
         "strict": true,
@@ -10,6 +11,7 @@
     "buildOnSave": true,
     "include": [
         "custom-typings/*.d.ts",
-        "src/**/*.ts",
+        "openapi-directory.d.ts",
+        "src/**/*.ts"
     ]
 }

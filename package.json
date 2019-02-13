@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Building & bundling https://github.com/APIs-guru/openapi-directory for easy use from JS",
   "main": "dist/runtime/index.js",
+  "types": "dist/runtime/index.d.ts",
   "files": [
     "api/",
     "dist/runtime/"
@@ -47,8 +48,8 @@
     "mocha": "^5.2.0",
     "napa": "^3.0.0",
     "openapi3-ts": "^1.2.0",
-    "swagger2openapi": "^5.2.1",
     "swagger-parser": "^6.0.5",
+    "swagger2openapi": "^5.2.1",
     "ts-node": "^8.0.2",
     "typescript": "^3.3.3"
   }
