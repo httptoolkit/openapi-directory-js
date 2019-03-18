@@ -49,9 +49,11 @@ export function calculateCommonPrefixes(
     let index: { [url: string]: string | string[] } = {};
 
     specPaths = _.mapValues(specPaths, (paths) =>
-        // Drop templated values ({var}), and anything that follows them
-        paths.map(path => path.replace(/{.*/, ''))
-        // TODO: Drop #fragments from URLs too?
+        paths.map(path =>
+            path
+            .split('{')[0] // Drop anything following a template path param ({var})
+            .split('#')[0] // Drop anything in a fragment (#Action=abc)
+        )
     );
 
     _.forEach(specPaths, (paths, specId) => {
