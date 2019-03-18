@@ -7,7 +7,8 @@
   "files": [
     "api/",
     "dist/runtime/",
-    "openapi-directory.d.ts"
+    "openapi-directory.d.ts",
+    "src/"
   ],
   "scripts": {
     "prepare": "napa APIs-guru/openapi-directory",
