@@ -95,8 +95,11 @@ export function calculateCommonPrefixes(
         // Add each prefix that was found to an index of URLs within this base URL.
         prefixes.forEach((prefix) => {
             const baseUrl = commonBase.replace(/\/$/, '') + prefix;
-            if (index[baseUrl]) {
-                index[baseUrl] = [specId].concat(index[baseUrl]);
+            const existingValue = index[baseUrl];
+            if (_.isArray(existingValue)) {
+                index[baseUrl] = _.union(existingValue, [specId]);
+            } else if (existingValue) {
+                index[baseUrl] = _.union([existingValue], [specId]);
             } else {
                 index[baseUrl] = specId;
             }

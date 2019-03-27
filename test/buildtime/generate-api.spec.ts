@@ -52,4 +52,17 @@ describe('Common prefixes', () => {
             'example.com/c': 'spec2'
         });
     });
+
+    it('deduplicates results with many conflicting endpoints', () => {
+        expect(
+            calculateCommonPrefixes('example.com', {
+                'spec1': ['/a/1', '/a/1', '/a/2'],
+                'spec2': ['/a/1', '/a/2', '/c']
+            })
+        ).to.deep.equal({
+            'example.com/a/1': ['spec1', 'spec2'],
+            'example.com/a/2': ['spec1', 'spec2'],
+            'example.com/c': 'spec2'
+        });
+    });
 });
