@@ -28,7 +28,7 @@ export class Trie {
             const keyToMatch = remainingKey.slice(0, keyLength);
             remainingKey = remainingKey.slice(keyLength);
 
-            const nextNode: TrieValue = node[keyToMatch];
+            const nextNode: TrieValue = node[keyToMatch] || node[''];
 
             if (isLeafValue(nextNode)) {
                 // We've reached the end of a key - if we're out of

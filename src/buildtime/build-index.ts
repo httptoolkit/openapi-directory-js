@@ -60,24 +60,44 @@ export function optimizeTrie(trie: TrieData): TrieData {
     if (_.isString(trie)) return trie;
 
     const keys = Object.keys(trie);
+
     if (keys.length === 0) return trie;
+
     if (keys.length === 1) {
         const [key] = keys;
-        const child = trie[key];
+        const child = trie[key]!;
 
         if (isLeafValue(child)) return trie;
 
-        // Return the only child, with every key prefixed with this key
-        const newChild = optimizeTrie(
-            _.mapKeys(child, (_value, childKey) => key + childKey)
-        );
+        // Don't combine if our child has a leaf node attached - this would break
+        // search (en route leaf nodes need to always be under '' keys)
+        if (!child['']) {
+            // Return the only child, with every key prefixed with this key
+            const newChild = optimizeTrie(
+                _.mapKeys(child, (_value, childKey) => key + childKey)
+            );
 
-        return newChild;
-    } else {
-        // Recursive DFS through the child values to optimize them in turn
-        return _.mapValues(trie, (child) => {
-            if (isLeafValue(child)) return child;
-            else return optimizeTrie(child!);
-        });
+            return newChild;
+        }
     }
+
+    if (keys.length === 2 && _.includes(keys, '')) {
+        const [key] = keys.filter(k => k !== '');
+        const child = trie[key]!;
+
+        const childKeys = Object.keys(child);
+        if (!isLeafValue(child) && childKeys.length === 1 && childKeys[0] !== '') {
+            // If child has only one key and it's not '', pull it up.
+            return optimizeTrie({
+                '': trie[''],
+                [key + childKeys[0]]: child[childKeys[0]]
+            });
+        }
+    }
+
+    // Recursive DFS through the child values to optimize them in turn
+    return _.mapValues(trie, (child) => {
+        if (isLeafValue(child)) return child;
+        else return optimizeTrie(child!);
+    });
 }

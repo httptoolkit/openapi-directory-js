@@ -27,17 +27,19 @@ describe('Index generation', () => {
         const trie = buildTrie({
             'a': 'value1',
             'ab': 'value2',
-            'abc': 'value3',
-            'abcd': 'value4',
+            'abcd': 'value3',
+            'abcdef': 'value4',
         });
 
-        expect(optimizeTrie(trie)).to.deep.equal({
-            'a': 'value1',
-            'ab': {
-                '': 'value2',
-                'c': {
-                    '': 'value3',
-                    'd': 'value4'
+        expect(trie).to.deep.equal({
+            a: {
+                '': 'value1',
+                b: {
+                    '': 'value2',
+                    cd: {
+                        '': 'value3',
+                        ef: 'value4'
+                    }
                 }
             }
         });
@@ -97,6 +99,30 @@ describe('Trie optimization', () => {
         expect(optimizeTrie(trie)).to.deep.equal({
             'ab': { '': 'value1', 'c': 'value2' },
             'ac': 'value3'
+        });
+    });
+
+    it('correctly simplifies complex tries without compressing leaf keys', () => {
+        const trie = {
+            a: {
+                '': 'value1',
+                b: {
+                    '': 'value3',
+                    c: {
+                        d: 'value4'
+                    }
+                }
+            }
+        };
+
+        expect(optimizeTrie(trie)).to.deep.equal({
+            a: {
+                '': 'value1',
+                b: {
+                    '': 'value3',
+                    cd: 'value4'
+                }
+            }
         });
     });
 });

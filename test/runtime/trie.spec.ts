@@ -31,28 +31,6 @@ describe('Trie searching', () => {
 
             expect(trie.get('ab')).to.equal('value');
         });
-
-        it('can search a large trie quickly', function () {
-            this.timeout(500); // 10000 in < 500ms = < 50 microseconds/search
-            const keys = _.range(10000).map(k => k.toString());
-
-            const trieData = buildTrie(
-                _.zipObject(
-                    keys,
-                    keys.map(k => `value${k}`)
-                )
-            );
-
-            const trie = new Trie(trieData);
-
-            keys.forEach((k) => {
-                expect(trie.get(k)).to.equal(`value${k}`);
-            });
-
-            // This is actually ~3x slower than a bare hashtable, for direct
-            // lookups. As long as it's within an order of magnitude or so though,
-            // that's ok. The real magic comes in prefix searching.
-        });
     });
 
     describe('with .getLongestMatchingPrefix()', () => {
@@ -88,16 +66,20 @@ describe('Trie searching', () => {
             const trie = new Trie(buildTrie({
                 'a': 'value',
                 'ab': 'value',
-                'abc': 'value2'
+                'abcd': 'value2',
+                'abcdef': 'value3'
             }));
 
-            expect(trie.getMatchingPrefix('abcd')).to.equal('value2');
+            expect(trie.getMatchingPrefix('abcde')).to.equal('value2');
         });
+    });
 
-        it('can search a large trie quickly', function () {
-            this.timeout(500); // 10000 in < 500ms = 50 microseconds max
-            const keys = _.range(10000).map(k => k.toString());
+    describe('given a large trie', () => {
 
+        const keys = _.range(10000).map(k => k.toString());
+        let trie: Trie;
+
+        before(() => {
             const trieData = buildTrie(
                 _.zipObject(
                     keys,
@@ -105,10 +87,27 @@ describe('Trie searching', () => {
                 )
             );
 
-            const trie = new Trie(trieData);
+            trie = new Trie(trieData);
+        });
+
+        it('can search by key quickly', function () {
+            this.timeout(500); // 10000 in < 500ms = < 50 microseconds/search
 
             keys.forEach((k) => {
-                expect(trie.getMatchingPrefix(k)).to.equal(`value${k}`);
+                expect(trie.get(k)).to.equal(`value${k}`);
+            });
+
+            // This is actually ~3x slower than a bare hashtable, for direct
+            // lookups. As long as it's within an order of magnitude or so though,
+            // that's ok. The real magic comes in prefix searching.
+        });
+
+        it('can search by prefix quickly', function () {
+            this.timeout(500); // 10000 in < 500ms = < 50 microseconds/search
+
+            keys.forEach((k) => {
+                const withSuffix = k + '-suffix';
+                expect(trie.getMatchingPrefix(withSuffix)).to.equal(`value${k}`);
             });
 
             // This is the key perf step - doing an equivalent loop on a hashtable
