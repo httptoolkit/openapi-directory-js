@@ -9,17 +9,26 @@ describe('Integration test:', function () {
         await buildAll([
             // Build only a limited set, to keep the tests quick
             'node_modules/openapi-directory/APIs/amazonaws.com/a*/**/swagger.yaml',
+            'node_modules/openapi-directory/APIs/azure.com/a*/**/swagger.yaml',
             'node_modules/openapi-directory/APIs/**/openapi.yaml'
         ]);
 
         const { findApi } = await import('../src/runtime/index');
+
+        // Direct string lookup, but requires path-based deduplication to avoid apigateway v2:
         const awsSpecId = findApi(
             'apigateway.amazonaws.com/restapis/1234/deployments/1234'
         );
-
-        expect(awsSpecId).to.be.a('string');
-
+        expect(awsSpecId).to.equal('amazonaws.com/apigateway');
         const awsSpec = await import(`../api/${awsSpecId}.json`);
         expect(awsSpec.info.title).to.equal('Amazon API Gateway');
+
+        // Lookup that requires path-based deduplication using regexes for params:
+        const azureSpecId = findApi(
+            'management.azure.com/subscriptions/123456/providers/microsoft.insights/listMigrationdate'
+        );
+        expect(azureSpecId).to.equal('azure.com/applicationinsights-eaSubscriptionMigration_API');
+        const azureSpec = await import(`../api/${azureSpecId}.json`);
+        expect(azureSpec.info.title).to.equal('ApplicationInsightsManagementClient');
     });
 });

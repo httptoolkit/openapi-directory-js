@@ -6,7 +6,7 @@ import { Trie } from "./trie";
 
 export * from 'openapi3-ts/dist/model';
 
-const trieData = require('../../api/_index.json');
+const trieData = require('../../api/_index.js');
 const apiIndex = new Trie(trieData);
 
 export const findApi = (url: string) =>

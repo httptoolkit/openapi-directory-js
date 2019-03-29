@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import * as serializeToJs from '@httptoolkit/serialize-javascript';
 
 import { generateApis } from "./generate-apis";
 import { buildTrie } from './build-index';
@@ -12,12 +13,13 @@ export async function buildAll(globs: string[]) {
     console.log('APIs generated and written to disk');
 
     await fs.writeFile(
-        path.join('api', '_index.json'),
-        JSON.stringify(buildTrie(index))
+        path.join('api', '_index.js'),
+        'module.exports = ' + serializeToJs(buildTrie(index), {
+            unsafe: true // We're not embedded in HTML, we don't want XSS escaping
+        })
     );
 
-    const indexSize = Object.keys(index).length;
-    console.log(`Index trie for ${indexSize} entries generated and written to disk`);
+    console.log(`Index trie for ${index.size} entries generated and written to disk`);
 }
 
 if (require.main === module) {

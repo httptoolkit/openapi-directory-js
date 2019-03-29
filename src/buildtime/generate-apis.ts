@@ -22,7 +22,9 @@ async function generateApi(specPath: string): Promise<OpenAPIObject> {
     return swaggerParser.bundle(openapi);
 }
 
-function commonSubstring(...strings: string[]): string {
+type PathParts = Array<string | RegExp>;
+
+function commonStringPrefix(...strings: string[]): string {
     const first = strings[0] || '';
     let commonLength = first.length
 
@@ -38,6 +40,44 @@ function commonSubstring(...strings: string[]): string {
     return first.slice(0, commonLength)
 }
 
+function commonPartsPrefix(...partsArrays: Array<PathParts>): PathParts {
+    const first = partsArrays[0] || [];
+    let commonLength = first.length;
+
+    // Find the length of the exactly matching parts prefix for these arrays
+    for (let i = 1; i < partsArrays.length; ++i) {
+        for (let j = 0; j < commonLength; ++j) {
+            const parts = partsArrays[i];
+            if (!_.isEqual(parts[j], first[j])) {
+                commonLength = j;
+                break;
+            }
+        }
+    }
+
+    // In the first non-matching part, find the common prefix there (if any)
+    const nonMatchingIndex = commonLength;
+    let extraSubPart: string | undefined;
+    // They must all be strings for us to be able to do this.
+    if (!_.some(partsArrays, part => !part[nonMatchingIndex] || part[nonMatchingIndex] instanceof RegExp)) {
+        // Get the common string prefix (if any) of the non-matching part of each parts array
+        extraSubPart = commonStringPrefix(
+            ...partsArrays.map(parts => parts[nonMatchingIndex] as string)
+        );
+    }
+
+    if (extraSubPart) {
+        return first.slice(0, commonLength).concat(extraSubPart);
+    } else {
+        return first.slice(0, commonLength)
+    }
+}
+
+function isAPrefix(possiblePrefix: PathParts, longerParts: PathParts) {
+    const commonPrefix = commonPartsPrefix(possiblePrefix, longerParts);
+    return _.isEqual(possiblePrefix, commonPrefix);
+}
+
 // Take a base URL, and a set of specs who all use the same base, and build an index
 // within that base, keyed by the unique paths that map to each spec. This might still
 // end up with duplicates if two specs define literally the same endpoint, but it
@@ -45,63 +85,99 @@ function commonSubstring(...strings: string[]): string {
 export function calculateCommonPrefixes(
     commonBase: string,
     specPaths: { [specId: string]: string[] }
-): { [url: string]: string | string[] } {
-    let index: { [url: string]: string | string[] } = {};
+): Map<PathParts, string | string[]> {
+    let index = new Map<PathParts, string | string[]>();
 
-    specPaths = _.mapValues(specPaths, (paths) =>
+    const specPathParts = _.mapValues(specPaths, (paths) =>
         paths.map(path =>
             path
-            .split('{')[0] // Drop anything following a template path param ({var})
-            .split('#')[0] // Drop anything in a fragment (#Action=abc)
+                .split('#')[0] // Drop anything in a fragment (#Action=abc)
+                .split(/\{[^}]+\}/) // Split around param sections
+                .reduce<PathParts>((pathParts, pathPart) => {
+                    // Inject a param regex between every split section to replace the params, and at the end
+                    return [...pathParts, pathPart, /^[^/]+/];
+                }, [])
+                .slice(0, -1) // Drop the extra param regex from the end
+                .filter(p => !!p) // Drop any empty strings, e.g. if {param} was the end of the path
         )
     );
 
-    _.forEach(specPaths, (paths, specId) => {
+    _.forEach(specPathParts, (pathParts, specId) => {
         // For each spec, try to work out the minimum set of URL prefixes that unambiguously
         // point to this spec, and no others.
 
-        let prefixes: string[] = [];
-        const otherSpecPaths = _(specPaths).omit(specId).flatMap((otherPaths) => otherPaths).valueOf();
+        let prefixes: Array<PathParts> = [];
+        const otherSpecPaths = _(specPathParts)
+            .omit(specId)
+            .flatMap((otherPaths) => otherPaths).valueOf();
 
-        paths.forEach((path) => {
-            // If we've already got a working prefix for this path, skip it
-            if (_.some(prefixes, (prefix) =>
-                path.startsWith(prefix) &&
-                !_.some(otherSpecPaths, path => path.startsWith(prefix))
+        pathParts.forEach((parts) => {
+            // If the existing prefixes for this spec already work fine for this path, skip it
+            if (_.some(prefixes, (prefixParts) =>
+                // Does an existing prefix for this spec match the start of this path?
+                isAPrefix(prefixParts, parts) &&
+                // Do no prefixes for other specs match the start of this path?
+                !_.some(otherSpecPaths, path => isAPrefix(path, parts))
             )) return;
 
             // Try to shorten existing prefixes as little as possible to match this path,
             // without matching the paths of any other routes
-            const shortening = _(prefixes)
-                .map((prefix) => commonSubstring(path, prefix))
+            const possibleShortenings = prefixes
+                .map((prefix) => commonPartsPrefix(parts, prefix))
                 .filter((shortenedPrefix) =>
-                    !_.some(otherSpecPaths, path => path.startsWith(shortenedPrefix))
-                )
-                .maxBy((prefix) => prefix.length);
+                    shortenedPrefix.length &&
+                    !_.some(otherSpecPaths, path => isAPrefix(shortenedPrefix, path))
+                );
 
-            if (shortening) {
+            // Sort and [0] to use the longest/most specific shortened prefix we can come up with
+            const shortening = possibleShortenings
+                .sort((prefixA, prefixB) => {
+                    if (prefixA.length > prefixB.length) return -1;
+                    if (prefixB.length > prefixA.length) return 1;
+
+                    // The have the same number of parts, compare the length of the last parts
+                    const lastIndex = prefixA.length - 1;
+                    const lastPartA = prefixA[lastIndex];
+                    const lastPartB = prefixB[lastIndex];
+                    if (lastPartA.toString().length > lastPartB.toString().length) return -1;
+                    if (lastPartA.toString().length > lastPartA.toString().length) return 1;
+                    return 0;
+                })[0];
+
+            if (shortening && shortening.length) {
+                // Drop any existing prefixes that this makes irrelevant
                 prefixes = prefixes
-                    .filter((prefix) => !prefix.startsWith(shortening))
-                    .concat(shortening);
+                    .filter((existingPrefix) => !isAPrefix(shortening, existingPrefix))
+                    .concat([shortening]);
             } else {
                 // There's no possible shortenings of existing prefixes.
                 // Either we're a new unusual case, or we're the first case,
-                // or we're a substring of some other spec's path and we need
-                // a new more specific case.
-                prefixes.push(path);
+                // or we're a prefix of some other spec's full path, and we need
+                // a specific case that covers this one part.
+                prefixes.push(parts);
             }
         });
 
         // Add each prefix that was found to an index of URLs within this base URL.
-        prefixes.forEach((prefix) => {
-            const baseUrl = commonBase.replace(/\/$/, '') + prefix;
-            const existingValue = index[baseUrl];
+        prefixes.forEach((prefixParts) => {
+            const baseUrl = commonBase.replace(/\/$/, '');
+            const urlParts =
+                prefixParts[0] === undefined ?
+                    [baseUrl] :
+                _.isString(prefixParts[0]) ?
+                    [baseUrl + prefixParts[0], ...prefixParts.slice(1)]
+                : [baseUrl, ...prefixParts];
+
+            const existingKey = _.find(Array.from(index.keys()), (k) => _.isEqual(k, urlParts));
+            const key = existingKey || urlParts;
+            const existingValue = index.get(key);
+
             if (_.isArray(existingValue)) {
-                index[baseUrl] = _.union(existingValue, [specId]);
+                index.set(key, _.union(existingValue, [specId]));
             } else if (existingValue) {
-                index[baseUrl] = _.union([existingValue], [specId]);
+                index.set(key, _.union([existingValue], [specId]));
             } else {
-                index[baseUrl] = specId;
+                index.set(key, specId);
             }
         });
     });
@@ -198,15 +274,12 @@ export async function generateApis(globs: string[]) {
     // Try to split duplicate index values for the same key (e.g. two specs for the
     // same base server URL) into separate values, by pulling common prefixes of the
     // paths from the specs into their index keys.
-    //
-    // This helps, but it's not totally effective. TODO: We could do better if
-    // we used template params, by allowing inline wildcards in the trie somehow.
-    const dedupedIndex: _.Dictionary<string | string[]> = {};
+    let dedupedIndex = new Map<PathParts, string | string[]>();
     await Promise.all(
         _.map(index, async (specs, commonBase) => {
             if (typeof specs === 'string') {
-                dedupedIndex[commonBase] = specs;
-                return dedupedIndex;
+                dedupedIndex.set([commonBase], specs);
+                return;
             } else {
                 const specFiles: _.Dictionary<string[]> = _.fromPairs(
                     await Promise.all(
@@ -219,7 +292,7 @@ export async function generateApis(globs: string[]) {
                 );
 
                 const dedupedPaths = calculateCommonPrefixes(commonBase, specFiles);
-                Object.assign(dedupedIndex, dedupedPaths);
+                dedupedIndex = new Map([...dedupedIndex, ...dedupedPaths]);
             }
         })
     );

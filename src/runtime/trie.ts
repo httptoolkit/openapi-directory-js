@@ -1,14 +1,15 @@
+import * as _ from 'lodash';
 type TrieLeafValue = string | string[];
 
-type TrieValue =
+export type TrieValue =
     | TrieData
     | TrieLeafValue
     | undefined;
 
-export interface TrieData {
-    ''?: TrieLeafValue;
-    [nextKey: string]: TrieValue;
-}
+export interface TrieData extends Map<
+    string | RegExp,
+    TrieValue
+> {}
 
 export function isLeafValue(value: any): value is TrieLeafValue {
     return typeof value === 'string' || Array.isArray(value);
@@ -23,12 +24,53 @@ export class Trie {
         let node: TrieData | undefined = this.root;
 
         while (node) {
-            const keyLength = Object.keys(node)
-                .reduce((maxLength, key) => Math.max(key.length, maxLength), 0);
-            const keyToMatch = remainingKey.slice(0, keyLength);
-            remainingKey = remainingKey.slice(keyLength);
+            // Calculate the max key length. String keys should be all the same length,
+            // except one optional '' key if there's an on-path leaf node here, so we
+            // just use the first non-zero non-regex length.
+            let maxKeyLength;
+            for (let k of node.keys()) {
+                if (k && !(k instanceof RegExp)) {
+                    maxKeyLength = k.length;
+                    break;
+                }
+            }
 
-            const nextNode: TrieValue = node[keyToMatch] || node[''];
+            // Given a common key length L, we try to see if the first L characters
+            // of our remaining key are an existing key here
+            const keyToMatch = remainingKey.slice(0, maxKeyLength);
+            // We check for the key with a hash lookup (as we know it would have to be an exact match),
+            // _not_ by looping through keys with startsWith - this is key (ha!) to perf here.
+            let nextNode: TrieValue = node.get(keyToMatch);
+
+            if (nextNode) {
+                // If that bit of the key matched, we can remove it from the key to match,
+                // and move on to match the next bit.
+                remainingKey = remainingKey.slice(maxKeyLength);
+            } else {
+                // If it didn't match, we need to check regexes, if present, and check
+                // for an on-path leaf node here ('' key)
+                const matchedRegex: {
+                    matchedNode: TrieValue,
+                    matchLength: number
+                } | undefined = Array.from(node.keys()).map(k => {
+                    const match = k instanceof RegExp && k.exec(remainingKey)
+                    if (!!match && match.index === 0) {
+                        return {
+                            matchedNode: node!.get(k),
+                            matchLength: match[0].length
+                        };
+                    };
+                }).filter(r => !!r)[0];
+
+                if (matchedRegex) {
+                    // If we match a regex, we no longer need to match the part of the
+                    // key that the regex has consumed
+                    remainingKey = remainingKey.slice(matchedRegex.matchLength);
+                    nextNode = matchedRegex.matchedNode;
+                } else {
+                    nextNode = node.get('');
+                }
+            }
 
             if (isLeafValue(nextNode)) {
                 // We've reached the end of a key - if we're out of
@@ -43,6 +85,8 @@ export class Trie {
             }
         }
 
+        // We failed to match - this means at some point we either had no key left, and
+        // no on-path key present, or we had a key left that disagreed with every option.
         return undefined;
     }
 
