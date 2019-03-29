@@ -23,9 +23,9 @@ describe('Integration test:', function () {
         const awsSpec = await import(`../api/${awsSpecId}.json`);
         expect(awsSpec.info.title).to.equal('Amazon API Gateway');
 
-        // Lookup that requires path-based deduplication using regexes for params:
+        // Lookup that requires path-based deduplication using regexes for params, case-insensitive:
         const azureSpecId = findApi(
-            'management.azure.com/subscriptions/123456/providers/microsoft.insights/listMigrationdate'
+            'management.azure.com/subscriptions/123456/providers/Microsoft.Insights/listMigrationDate'
         );
         expect(azureSpecId).to.equal('azure.com/applicationinsights-eaSubscriptionMigration_API');
         const azureSpec = await import(`../api/${azureSpecId}.json`);

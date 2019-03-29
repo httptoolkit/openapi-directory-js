@@ -20,7 +20,7 @@ export class Trie {
     constructor(private root: TrieData) { }
 
     private _getLongestMatchingPrefix(key: string) {
-        let remainingKey = key;
+        let remainingKey = key.toLowerCase();
         let node: TrieData | undefined = this.root;
 
         while (node) {

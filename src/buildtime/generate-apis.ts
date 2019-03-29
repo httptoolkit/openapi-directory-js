@@ -233,7 +233,7 @@ export async function generateApis(globs: string[]) {
                     }
                 })
                 // Drop protocols from all URLs
-                .map((url) => url.replace(/^(https?:)?\/\//, ''))
+                .map((url) => url.replace(/^(https?:)?\/\//, '').toLowerCase())
                 .uniq()
                 .valueOf();
 
@@ -286,7 +286,9 @@ export async function generateApis(globs: string[]) {
                         specs.map(async (specId) => [
                             specId,
                             await swaggerParser.parse(getSpecPath(specId))
-                                .then((api: OpenAPIObject) => Object.keys(api.paths))
+                                .then((api: OpenAPIObject) =>
+                                    Object.keys(api.paths).map(p => p.toLowerCase())
+                                )
                         ])
                     )
                 );
