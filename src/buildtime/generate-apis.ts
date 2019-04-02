@@ -222,30 +222,37 @@ export async function generateApis(globs: string[]) {
 
             const { servers } = spec;
             const serverUrls = _(servers!)
-                // Expand to include possible variable values:
+                // Expand to include possible variable values. This handles v3 specs, or any
+                // specs converted to v3 variable hosts (e.g. azure's x-ms-parameterized-host).
                 .flatMap((server) => {
                     if (!server.variables) {
                         return server.url;
-                    } else {
-                        return _.reduce(server.variables, (urls, variable, variableKey) => {
-                            const {
-                                default: varDefault,
-                                enum: enumValues
-                            } = variable;
-
-                            const possibleValues = <string[]>_.uniq(
-                                [
-                                    varDefault,
-                                    ...(enumValues || [])
-                                ].filter(v => !!v)
-                            );
-
-                            // For each URL we have, replace it with each possible var replacement
-                            return _.flatMap(urls, (url) =>
-                                possibleValues.map((value) => url.replace(`{${variableKey}}`, value))
-                            );
-                        }, [server.url]);
                     }
+
+                    return _.reduce(server.variables, (urls, variable, variableKey) => {
+                        const {
+                            default: varDefault,
+                            enum: enumValues
+                        } = variable;
+
+                        const possibleValues = <string[]>_.uniq(
+                            [
+                                varDefault,
+                                ...(enumValues || [])
+                            ].filter(v => !!v)
+                        );
+
+                        // For each URL we have, replace it with each possible var replacement
+                        return _.flatMap(urls, (url) =>
+                            possibleValues.map((value) => url.replace(`{${variableKey}}`, value))
+                        );
+
+                        // Here we will drop specs for any variables without concrete default/enum
+                        // values. Wildcard URL params (e.g. Azure's search-searchservice) could be
+                        // matched with index regexes, but it might get expensive, and it's complicated
+                        // to do. Ignoring this for now, but TODO: we might want to match open wildcards
+                        // in URLs later (as long as their _somewhat_ constrained - 100% wildcard is bad)
+                    }, [server.url]);
                 })
                 // Drop protocols from all URLs
                 .map((url) => url.replace(/^(https?:)?\/\//, '').toLowerCase())
