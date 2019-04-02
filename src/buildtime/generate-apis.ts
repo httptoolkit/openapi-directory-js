@@ -13,13 +13,28 @@ async function generateApi(specPath: string): Promise<OpenAPIObject> {
     const parsedSwagger = await swaggerParser.parse(specPath);
 
     // Convert everything to OpenAPI v3
-    const openapi = await swaggerToOpenApi.convertObj(parsedSwagger, {
+    const openapi: OpenAPIObject = await swaggerToOpenApi.convertObj(parsedSwagger, {
         direct: true,
         patch: true
     });
 
+    // Extra conversion to transform x-ms-paths into fragment queries
+    mergeMsPaths(openapi);
+
     // Bundle all external $ref pointers
-    return swaggerParser.bundle(openapi);
+    return swaggerParser.bundle(<any> openapi);
+}
+
+function mergeMsPaths(openApi: OpenAPIObject) {
+    const msPaths = openApi['x-ms-paths'];
+    if (!msPaths) return openApi;
+
+    Object.assign(openApi.paths, _(msPaths)
+        .mapKeys((v, key) => key.replace('?', '#')) // Turn invalid queries into fragments queries like AWS
+        .pickBy((v, key) => !openApi.paths[key]) // Drop any conflicting paths
+        .valueOf()
+    );
+    delete openApi['x-ms-paths'];
 }
 
 type PathParts = Array<string | RegExp>;
