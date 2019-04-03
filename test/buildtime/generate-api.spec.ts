@@ -41,7 +41,7 @@ describe('Common prefixes', () => {
         }));
     });
 
-    it('can build common bases with overlapping suffixes', () => {
+    it('can build common bases with overlapping prefixes', () => {
         expect(
             calculateCommonPrefixes('example.com', {
                 'spec1': ['/a/b/1', '/a/b/2'],
@@ -54,16 +54,32 @@ describe('Common prefixes', () => {
         }));
     });
 
-    it('deduplicates results with many conflicting endpoints', () => {
+    it('can separate suffixes for overlapping suffixes', () => {
         expect(
             calculateCommonPrefixes('example.com', {
-                'spec1': ['/a/1', '/a/1', '/a/2'],
-                'spec2': ['/a/1', '/a/2', '/c']
+                'spec1': ['/a/b/1', '/a/b/2'],
+                'spec2': ['/a/b/3', '/a/b/4']
             })
         ).to.deep.equal(objToInput({
-            'example.com/a/1': ['spec1', 'spec2'],
-            'example.com/a/2': ['spec1', 'spec2'],
-            'example.com/c': 'spec2'
+            'example.com/a/b/1': 'spec1',
+            'example.com/a/b/2': 'spec1',
+            'example.com/a/b/3': 'spec2',
+            'example.com/a/b/4': 'spec2',
+        }));
+    });
+
+    it('can simplify common bases with conflicting URLs', () => {
+        expect(
+            calculateCommonPrefixes('example.com', {
+                'spec1': ['/a/b/1', '/a/b/2', '/a/b/3', '/c/1'],
+                'spec2': ['/a/b/1', '/a/b/2', '/c/1'],
+                'spec3': ['/b/1']
+            })
+        ).to.deep.equal(objToInput({
+            'example.com/a/b/': ['spec1', 'spec2'],
+            'example.com/a/b/3': 'spec1',
+            'example.com/c/1': ['spec1', 'spec2'],
+            'example.com/b/1': 'spec3',
         }));
     });
 
@@ -74,8 +90,7 @@ describe('Common prefixes', () => {
                 'spec2': ['/a/1', '/a/2', '/a/{param}', '/c']
             })
         ).to.deep.equal(t([
-            [['example.com/a/1'], ['spec1', 'spec2']],
-            [['example.com/a/', /^[^/]+/], ['spec1', 'spec2']],
+            [['example.com/a/'], ['spec1', 'spec2']],
             [['example.com/a/', /^[^/]+/, '/b'], 'spec1'],
             [['example.com/a/2'], 'spec2'],
             [['example.com/c'], 'spec2']

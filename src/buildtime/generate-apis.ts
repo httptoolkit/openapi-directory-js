@@ -165,10 +165,12 @@ export function calculateCommonPrefixes(
                     .filter((existingPrefix) => !isAPrefix(shortening, existingPrefix))
                     .concat([shortening]);
             } else {
-                // There's no possible shortenings of existing prefixes.
-                // Either we're a new unusual case, or we're the first case,
-                // or we're a prefix of some other spec's full path, and we need
-                // a specific case that covers this one part.
+                // There are no possible shortenings of existing prefixes that would uniquely
+                // identify this path - we have nothing unique in commmon with existing prefixes.
+                // Either we're a new 'branch' of the API (e.g. the first endpoint), or
+                // we're a prefix/exact match for some other endpoint's full path.
+                // We create a specific case that covers this one path, which may be shortened
+                // later on if we find other similar paths for this spec.
                 prefixes.push(parts);
             }
         });
@@ -196,6 +198,65 @@ export function calculateCommonPrefixes(
             }
         });
     });
+
+    // Where we have directly conflicting endpoints (two specs both defining a.com/b), we'll get
+    // a prefix for each unique endpoint. This is technically correct, but for specs that heavily
+    // overlap (e.g. Azure's LUIS Runtime/Authoring) these become very noisy and inflate the index
+    // hugely (approx 100% right now).
+    // Here, we try to find shortenings for conflicting cases, by grouping each set of conflicts,
+    // and finding a small set of shortenings that cover these cases. The heuristic for 'small'
+    // is to include allow shortenings that match no other specs (so therefore are pretty specific).
+    _(Array.from(index))
+        // Get conflicting groups
+        .filter(([key, value]) => Array.isArray(value))
+        // Group by the specs which conflict
+        .groupBy(([key, value]) => value)
+        // For each set of conflicts, find the possible shortenings
+        .forEach((conflicts) => {
+            const conflictingSpecs = <string[]> conflicts[0][1];
+            const conflictingPaths = conflicts.map(([key]) => key);
+
+            // Collect all paths that map to specs other than these. These are the specs we don't
+            // want our shortenings to overlap with.
+            const otherSpecPaths = _(Array.from(index))
+                // Don't worry about any paths that only match one of these specs
+                .omitBy(([_paths, specs]: [unknown, string | string[]]) => {
+                    if (Array.isArray(specs)) {
+                        return _.intersection(specs, conflictingSpecs).length === specs.length;
+                    } else {
+                        return _.includes(conflictingSpecs, specs);
+                    }
+                })
+                .map(([otherPaths]) => otherPaths).valueOf();
+
+            const shortenings = conflictingPaths.reduce((foundShortenings: PathParts[], conflictingPath) => {
+                // Find any possible shared prefixes between this conflicting path
+                // and our shortened prefixes found so far that don't conflict with other specs
+                let newShortenings = foundShortenings
+                    .map(s => commonPartsPrefix(s, conflictingPath))
+                    .filter(s => s && !_.some(otherSpecPaths, path => isAPrefix(s, path)));
+
+                // If this can't be shortened, it needs to exist as a path standalone. This is ok - it will
+                // always happen for the first value at least, and it can be shortened further later.
+                if (newShortenings.length === 0) newShortenings = [conflictingPath];
+
+                return foundShortenings
+                    // Remove any existing shortenings that our new shortenings replace
+                    .filter(s => !_.some(newShortenings,
+                        newShortening => isAPrefix(newShortening, s))
+                    )
+                    // Add our new shortenings
+                    .concat(newShortenings);
+            }, []);
+
+            // We now have a set of common paths covering these conflicting paths, which
+            // is hopefully shorter (at worst the same) as the existing ones. Update the
+            // index to replace the conflicts with these values.
+            conflictingPaths.forEach((p) => index.delete(p));
+            shortenings.forEach((p) => index.set(p, conflictingSpecs));
+            // (An aside: we know writing over index[p] is safe, because shortenings cannot
+            // contain any paths that conflict with existing paths in the index)
+        })
 
     return index;
 }
@@ -293,6 +354,8 @@ export async function generateApis(globs: string[]) {
         }))
     );
 
+    console.log('APIs parsed and loaded');
+
     // Try to split duplicate index values for the same key (e.g. two specs for the
     // same base server URL) into separate values, by pulling common prefixes of the
     // paths from the specs into their index keys.
@@ -315,6 +378,8 @@ export async function generateApis(globs: string[]) {
                     )
                 );
 
+
+                console.log(`Deduping index for ${commonBase}`);
                 const dedupedPaths = calculateCommonPrefixes(commonBase, specFiles);
                 dedupedIndex = new Map([...dedupedIndex, ...dedupedPaths]);
             }
