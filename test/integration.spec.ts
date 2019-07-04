@@ -8,16 +8,16 @@ describe('Integration test:', function () {
     it('building all APIs should create a usable index', async () => {
         await buildAll([
             // Build only a limited set, to keep the tests quick
-            'node_modules/openapi-directory/APIs/amazonaws.com/a*/**/swagger.yaml',
-            'node_modules/openapi-directory/APIs/azure.com/a*/**/swagger.yaml',
-            'node_modules/openapi-directory/APIs/**/openapi.yaml'
+            'node_modules/openapi-directory/APIs/amazonaws.com/ap*/**/swagger.yaml',
+            'node_modules/openapi-directory/APIs/azure.com/ap*/**/swagger.yaml',
+            'node_modules/openapi-directory/APIs/tomtom.com/**/openapi.yaml'
         ]);
 
         const { findApi } = await import('../src/runtime/index');
 
         // Direct string lookup, but requires path-based deduplication to avoid apigateway v2:
         const awsSpecId = findApi(
-            'apigateway.amazonaws.com/restapis/1234/deployments/1234'
+            'apigateway.eu-north-1.amazonaws.com/restapis/1234/deployments/1234'
         );
         expect(awsSpecId).to.equal('amazonaws.com/apigateway');
         const awsSpec = await import(`../api/${awsSpecId}.json`);
