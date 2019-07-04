@@ -55,8 +55,8 @@
     "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "napa": "^3.0.0",
-    "swagger-parser": "^6.0.5",
-    "swagger2openapi": "^5.2.1",
+    "swagger-parser": "^8.0.0",
+    "swagger2openapi": "^5.3.0",
     "ts-node": "^8.0.2",
     "typescript": "^3.3.3"
   }

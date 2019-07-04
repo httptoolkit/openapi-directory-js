@@ -5,15 +5,24 @@ import * as globby from 'globby';
 
 import * as swaggerParser from 'swagger-parser';
 import * as swaggerToOpenApi from 'swagger2openapi';
-import { OpenAPIObject } from 'openapi3-ts';
+
+import { OpenAPIV3 } from 'openapi-types';
+import { PathsObject, InfoObject } from 'openapi3-ts';
 
 const OUTPUT_DIRECTORY = path.join(__dirname, '..', '..', 'api');
 
-async function generateApi(specPath: string): Promise<OpenAPIObject> {
+type OpenAPIDocument = OpenAPIV3.Document & {
+    'x-ms-paths'?: PathsObject;
+    info: InfoObject & {
+        'x-preferred'?: boolean;
+    }
+}
+
+async function generateApi(specPath: string): Promise<OpenAPIDocument> {
     const parsedSwagger = await swaggerParser.parse(specPath);
 
     // Convert everything to OpenAPI v3
-    const openapi: OpenAPIObject = await swaggerToOpenApi.convertObj(parsedSwagger, {
+    const openapi: OpenAPIV3.Document = await swaggerToOpenApi.convertObj(parsedSwagger, {
         direct: true,
         patch: true
     });
@@ -22,10 +31,10 @@ async function generateApi(specPath: string): Promise<OpenAPIObject> {
     mergeMsPaths(openapi);
 
     // Bundle all external $ref pointers
-    return swaggerParser.bundle(<any> openapi);
+    return <Promise<OpenAPIDocument>> swaggerParser.bundle(openapi);
 }
 
-function mergeMsPaths(openApi: OpenAPIObject) {
+function mergeMsPaths(openApi: OpenAPIDocument) {
     const msPaths = openApi['x-ms-paths'];
     if (!msPaths) return openApi;
 
@@ -371,7 +380,7 @@ export async function generateApis(globs: string[]) {
                         specs.map(async (specId) => [
                             specId,
                             await swaggerParser.parse(getSpecPath(specId))
-                                .then((api: OpenAPIObject) =>
+                                .then((api) =>
                                     Object.keys(api.paths).map(p => p.toLowerCase())
                                 )
                         ])
