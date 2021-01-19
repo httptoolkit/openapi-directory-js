@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import * as serializeToJs from '@httptoolkit/serialize-javascript';
+import * as serializeToJs from 'serialize-javascript';
 
 import { generateApis } from "./generate-apis";
 import { buildTrie } from './build-index';
