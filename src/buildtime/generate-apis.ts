@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as globby from 'globby';
 
-import * as swaggerParser from 'swagger-parser';
+import * as swaggerParser from '@apidevtools/swagger-parser';
 import * as swaggerToOpenApi from 'swagger2openapi';
 
 import { OpenAPIV3 } from 'openapi-types';
