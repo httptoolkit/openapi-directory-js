@@ -26,5 +26,8 @@ if (require.main === module) {
     buildAll([
         `${SOURCE_DIRECTORY}/**/swagger.yaml`,
         `${SOURCE_DIRECTORY}/**/openapi.yaml`,
-    ]);
+    ]).catch((e) => {
+        console.error(e);
+        process.exit(1);
+    });
 }
