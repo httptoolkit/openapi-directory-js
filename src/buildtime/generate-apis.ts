@@ -27,11 +27,24 @@ async function generateApi(specPath: string): Promise<OpenAPIDocument> {
         patch: true
     });
 
+    // Trailing slashes on servers make logic later more complicated. Since paths
+    // always start with a slash, they should always be omitted:
+    stripTrailingServerSlashes(openapi);
+
     // Extra conversion to transform x-ms-paths into fragment queries
     mergeMsPaths(openapi);
 
     // Bundle all external $ref pointers
     return <Promise<OpenAPIDocument>> swaggerParser.bundle(openapi);
+}
+
+function stripTrailingServerSlashes(openApi: OpenAPIDocument) {
+    if (!openApi.servers) return;
+
+    openApi.servers = openApi.servers.map(server => ({
+        ...server,
+        url: server.url.replace(/\/$/, '') // Strip trailing slash
+    }));
 }
 
 function mergeMsPaths(openApi: OpenAPIDocument) {
