@@ -57,7 +57,7 @@
     "openapi-types": "^7.2.3",
     "serialize-javascript": "^5.0.1",
     "swagger-parser": "^8.0.0",
-    "swagger2openapi": "^5.3.0",
+    "swagger2openapi": "^7.0.5",
     "ts-node": "^8.0.2",
     "typescript": "^3.3.3"
   }
