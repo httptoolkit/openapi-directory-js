@@ -8,9 +8,9 @@ describe('Integration test:', function () {
     it('building all APIs should create a usable index', async () => {
         await buildAll([
             // Build only a limited set, to keep the tests quick
-            'node_modules/openapi-directory/APIs/amazonaws.com/ap*/**/*.yaml',
-            'node_modules/openapi-directory/APIs/azure.com/ap*/**/*.yaml',
-            'node_modules/openapi-directory/APIs/tomtom.com/**/*.yaml'
+            'node_modules/openapi-directory/APIs/amazonaws.com/ap*/**/{swagger,openapi}.yaml',
+            'node_modules/openapi-directory/APIs/azure.com/ap*/**/{swagger,openapi}.yaml',
+            'node_modules/openapi-directory/APIs/tomtom.com/**/{swagger,openapi}.yaml'
         ]);
 
         const { findApi } = await import('../src/runtime/index');
