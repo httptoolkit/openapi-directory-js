@@ -274,6 +274,12 @@ function getSpecPath(specId: string) {
     return path.join('api', specId) + '.json';
 }
 
+function idFromSpec(spec: OpenAPIDocument) {
+    const provider = spec.info['x-providerName'];
+    const service = spec.info['x-serviceName'];
+    return provider + (service ? path.sep + service : '');
+}
+
 export async function generateApis(globs: string[]) {
     const [specs] = await Promise.all([
         globby(globs),
@@ -281,6 +287,7 @@ export async function generateApis(globs: string[]) {
     ]);
 
     const index: _.Dictionary<string | string[]> = {};
+    const specIds: string[] = [];
 
     await Promise.all(
         specs.map(async (specSource) => {
@@ -329,9 +336,12 @@ export async function generateApis(globs: string[]) {
                 .uniq()
                 .valueOf();
 
-            const provider = spec.info['x-providerName'];
-            const service = spec.info['x-serviceName'];
-            const specId = provider + (service ? path.sep + service : '');
+            const specId = idFromSpec(spec);
+
+            if (specIds.includes(specId)) {
+                throw new Error(`Duplicate spec id ${specId}`);
+            }
+            specIds.push(specId);
 
             serverUrls.forEach((url) => {
                 if (index[url]) {
