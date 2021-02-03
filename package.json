@@ -17,6 +17,7 @@
     "build": "tsc && node dist/buildtime/build-all.js",
     "test": "TS_NODE_FILES=true mocha -r ts-node/register 'test/**/*.spec.ts'"
   },
+  "runkitExampleFilename": "./runkit-demo.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/httptoolkit/openapi-directory-js.git"
