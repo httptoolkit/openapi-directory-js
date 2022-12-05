@@ -54,7 +54,7 @@
     "fs-extra": "^7.0.1",
     "globby": "^9.0.0",
     "lodash": "^4.17.11",
-    "mocha": "^5.2.0",
+    "mocha": "^10.1.0",
     "napa": "^3.0.0",
     "openapi-types": "^7.2.3",
     "serialize-javascript": "^5.0.1",
