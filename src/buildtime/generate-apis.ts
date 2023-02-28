@@ -306,7 +306,7 @@ export async function generateApis(globs: string[]) {
     ]);
 
     const index: _.Dictionary<string | string[]> = {};
-    const specIds: string[] = [];
+    const specIds: _.Dictionary<string> = {};
 
     await Promise.all(
         specs.map(async (specSource) => {
@@ -357,10 +357,12 @@ export async function generateApis(globs: string[]) {
 
             const specId = idFromSpec(spec);
 
-            if (specIds.includes(specId)) {
-                throw new Error(`Duplicate spec id ${specId}`);
+            // Case-insensitively check for duplicate spec ids, and report conflicts:
+            const existingSpecSource = specIds[specId.toLowerCase()];
+            if (existingSpecSource) {
+                throw new Error(`Duplicate spec id ${specId} between ${specSource} and ${existingSpecSource}`);
             }
-            specIds.push(specId);
+            specIds[specId.toLowerCase()] = specSource;
 
             serverUrls.forEach((url) => {
                 if (index[url]) {
