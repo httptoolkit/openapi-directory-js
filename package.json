@@ -42,7 +42,7 @@
     "openapi3-ts": "^1.2.0"
   },
   "devDependencies": {
-    "@apidevtools/swagger-parser": "^10.0.2",
+    "@apidevtools/swagger-parser": "^10.1.0",
     "@types/chai": "^4.1.7",
     "@types/fs-extra": "^5.0.4",
     "@types/globby": "^8.0.0",
@@ -58,7 +58,6 @@
     "napa": "^3.0.0",
     "openapi-types": "^7.2.3",
     "serialize-javascript": "^5.0.1",
-    "swagger-parser": "^8.0.0",
     "swagger2openapi": "^7.0.5",
     "ts-node": "^8.0.2",
     "typescript": "^4.1.3"
