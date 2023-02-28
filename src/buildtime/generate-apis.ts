@@ -49,6 +49,11 @@ function mergeMsPaths(openApi: OpenAPIDocument) {
 }
 
 function patchSpec(spec: OpenAPIDocument) {
+    const specId = idFromSpec(spec);
+    if (specId === 'spotify.com') {
+        delete (spec.components as any)?.['x-spotify-policy']?.['$ref'];
+    }
+
     if (spec.info['x-providerName'] === 'github.com') {
         // GitHub has $ref in its examples, which breaks our parser:
         // https://github.com/github/rest-api-description/issues/188
