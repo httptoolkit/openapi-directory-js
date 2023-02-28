@@ -6,20 +6,27 @@ import * as globby from 'globby';
 import * as swaggerParser from '@apidevtools/swagger-parser';
 import * as swaggerToOpenApi from 'swagger2openapi';
 
-import { OpenAPIV3 } from 'openapi-types';
+import { OpenAPI, OpenAPIV3 } from 'openapi-types';
 import { PathsObject, InfoObject } from 'openapi3-ts';
 
 const OUTPUT_DIRECTORY = path.join(__dirname, '..', '..', 'api');
 
+type ExtendedInfo = InfoObject & {
+    'x-preferred'?: boolean;
+    'x-providerName'?: string;
+    'x-serviceName'?: string;
+}
+
 type OpenAPIDocument = OpenAPIV3.Document & {
     'x-ms-paths'?: PathsObject;
-    info: InfoObject & {
-        'x-preferred'?: boolean;
-    }
+    info: ExtendedInfo
 }
 
 async function generateApi(specPath: string): Promise<OpenAPIDocument> {
     const parsedSwagger = await swaggerParser.parse(specPath);
+
+    // Manually patch up some known issues in existing specs:
+    patchSpec(parsedSwagger);
 
     // Convert everything to OpenAPI v3
     const openapi: OpenAPIV3.Document = await swaggerToOpenApi.convertObj(parsedSwagger, {
@@ -29,8 +36,6 @@ async function generateApi(specPath: string): Promise<OpenAPIDocument> {
 
     // Extra conversion to transform x-ms-paths into fragment queries
     mergeMsPaths(openapi);
-
-    patchSpec(openapi);
 
     // Bundle all external $ref pointers
     return <Promise<OpenAPIDocument>> swaggerParser.bundle(openapi);
@@ -48,10 +53,20 @@ function mergeMsPaths(openApi: OpenAPIDocument) {
     delete openApi['x-ms-paths'];
 }
 
-function patchSpec(spec: OpenAPIDocument) {
+function patchSpec(spec: OpenAPI.Document & Partial<OpenAPIDocument>) {
     const specId = idFromSpec(spec);
+
     if (specId === 'spotify.com') {
-        delete (spec.components as any)?.['x-spotify-policy']?.['$ref'];
+        // Fix a broken reference to an external policies.json file:
+        delete (spec.components as any)['x-spotify-policy']['$ref'];
+    }
+
+    if (specId === 'evetech.net') {
+        // Fix a (not swagger-convertable) parameter definition:
+        delete spec.paths['/route/{origin}/{destination}/']
+            .get
+            .parameters[1]
+            .items.collectionFormat;
     }
 
     if (spec.info['x-providerName'] === 'github.com') {
@@ -298,9 +313,11 @@ function getSpecPath(specId: string) {
     return path.join('api', specId) + '.json';
 }
 
-function idFromSpec(spec: OpenAPIDocument) {
-    const provider = spec.info['x-providerName'];
-    const service = spec.info['x-serviceName'];
+function idFromSpec(spec: OpenAPIDocument | OpenAPI.Document) {
+    const info = spec.info as ExtendedInfo;
+    const provider = info['x-providerName'];
+    const service = info['x-serviceName'];
+
     return provider + (service ? path.sep + service : '');
 }
 
