@@ -68,21 +68,6 @@ function patchSpec(spec: OpenAPI.Document & Partial<OpenAPIDocument>) {
             .parameters[1]
             .items.collectionFormat;
     }
-
-    if (spec.info['x-providerName'] === 'github.com') {
-        // GitHub has $ref in its examples, which breaks our parser:
-        // https://github.com/github/rest-api-description/issues/188
-        // We just drop those examples.
-        if ((spec.components?.examples?.['scim-enterprise-group'] as any).value) {
-            (spec.components?.examples?.['scim-enterprise-group'] as any).value = {};
-        }
-        if ((spec.components?.examples?.['scim-enterprise-group-2'] as any).value) {
-            (spec.components?.examples?.['scim-enterprise-group-2'] as any).value = {};
-        }
-        if ((spec.components?.examples?.['scim-enterprise-group-list'] as any).value) {
-            (spec.components?.examples?.['scim-enterprise-group-list'] as any).value = {};
-        }
-    }
 }
 
 type PathParts = Array<string | RegExp>;
