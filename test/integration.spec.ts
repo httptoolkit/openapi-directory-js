@@ -11,7 +11,10 @@ describe('Integration test:', function () {
             'node_modules/openapi-directory/APIs/amazonaws.com/ap*/**/{swagger,openapi}.yaml',
             'node_modules/openapi-directory/APIs/azure.com/ap*/**/{swagger,openapi}.yaml',
             'node_modules/openapi-directory/APIs/tomtom.com/**/{swagger,openapi}.yaml'
-        ]);
+        ], {
+            ignoreKnownErrors: true, // Should be zero errors here
+            expectKnownErrors: false // Don't expect all errors, since we're not building all specs
+        });
 
         const { findApi } = await import('../src/runtime/index');
 

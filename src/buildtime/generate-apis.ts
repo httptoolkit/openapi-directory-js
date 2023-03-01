@@ -9,6 +9,11 @@ import * as swaggerToOpenApi from 'swagger2openapi';
 import { OpenAPI, OpenAPIV3 } from 'openapi-types';
 import { PathsObject, InfoObject } from 'openapi3-ts';
 
+import {
+    KNOWN_ERRORS,
+    matchErrors
+} from './known-errors';
+
 const OUTPUT_DIRECTORY = path.join(__dirname, '..', '..', 'api');
 
 type ExtendedInfo = InfoObject & {
@@ -306,7 +311,20 @@ function idFromSpec(spec: OpenAPIDocument | OpenAPI.Document) {
     return provider + (service ? path.sep + service : '');
 }
 
-export async function generateApis(globs: string[]) {
+export interface ApiGenerationOptions {
+    /**
+     * If set, API generation will not fail for errors in the known error set.
+     */
+    ignoreKnownErrors?: boolean,
+
+    /**
+     * If set, API generation will fail if not all errors in the known error set are thrown.
+     */
+    expectKnownErrors?: boolean
+
+}
+
+export async function generateApis(globs: string[], options: ApiGenerationOptions = {}) {
     const [specs] = await Promise.all([
         globby(globs),
         fs.emptyDir(OUTPUT_DIRECTORY)
@@ -314,6 +332,8 @@ export async function generateApis(globs: string[]) {
 
     const index: _.Dictionary<string | string[]> = {};
     const specIds: _.Dictionary<string> = {};
+
+    const errors: { [specSource: string]: Error } = {};
 
     await Promise.all(
         specs.map(async (specSource) => {
@@ -393,13 +413,38 @@ export async function generateApis(globs: string[]) {
 
             await fs.mkdirp(path.dirname(specPath));
             await fs.writeFile(specPath, JSON.stringify(spec));
-        }).map((p, i) => p.catch((e) => {
+        }).map((p, i) => p.catch((err: Error) => {
             console.log(
                 `Failed to generate API from ${specs[i]}`,
-                e.message.split('\n')[0]
+                err.message.split('\n')[0]
             );
+
+            errors[specs[i]] = err;
         }))
     );
+
+    const errorPairs = Object.entries(errors);
+    const expectedErrorsPairs = Object.entries(KNOWN_ERRORS);
+
+    if (options.ignoreKnownErrors) {
+        const unexpectedErrors = _.differenceWith(errorPairs, expectedErrorsPairs, matchErrors);
+        if (unexpectedErrors.length) {
+            throw new Error(`Build failed unexpectedly due to errors in:\n${
+                unexpectedErrors.map(([source]) => source).join(', ')
+            }`);
+        }
+    } else {
+        if (errorPairs.length) throw new Error('Unexpected errors while building specs');
+    }
+
+    if (options.expectKnownErrors) {
+        const missingErrors = _.differenceWith(expectedErrorsPairs, errorPairs, (a, b) => matchErrors(b, a));
+        if (missingErrors.length) {
+            throw new Error(`Build succeeded, but unexpectedly missing known errors from:\n${
+                missingErrors.map(([source]) => source).join(', ')
+            }`);
+        }
+    }
 
     console.log('APIs parsed and loaded');
 
