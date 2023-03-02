@@ -29,7 +29,7 @@
     "apis",
     "swagger"
   ],
-  "author": "Tim Perry <tim@httptoolkit.tech>",
+  "author": "Tim Perry <tim@httptoolkit.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/httptoolkit/openapi-directory-js/issues"

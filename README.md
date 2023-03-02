@@ -1,6 +1,6 @@
 # An OpenAPI Directory for JS [![Travis Build Status](https://img.shields.io/travis/httptoolkit/openapi-directory-js.svg)](https://travis-ci.org/httptoolkit/openapi-directory-js) [![npm version](https://badge.fury.io/js/openapi-directory.svg)](https://badge.fury.io/js/openapi-directory)
 
-> _Part of [HTTP Toolkit](https://httptoolkit.tech): powerful tools for building, testing & debugging HTTP(S)_
+> _Part of [HTTP Toolkit](https://httptoolkit.com): powerful tools for building, testing & debugging HTTP(S)_
 
 This repo builds & bundles the [OpenAPI Directory](https://github.com/APIs-guru/openapi-directory), so you can easily find, require and use any OpenAPI spec from the directory in your JS projects.
 
