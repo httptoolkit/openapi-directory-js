@@ -324,6 +324,15 @@ export interface ApiGenerationOptions {
 
 }
 
+const IGNORED_SPEC_IDS = [
+    // Ambiguous GitHub specs - we consider these as duplicate non-preferred versions of
+    // github.com/api.github.com, and ignore entirely, until this issue is fixed:
+    // https://github.com/APIs-guru/openapi-directory/issues/1115
+    'github.com/ghec.2022-11-28',
+    'github.com/ghec',
+    'github.com/api.github.com.2022-11-28'
+];
+
 export async function generateApis(globs: string[], options: ApiGenerationOptions = {}) {
     const [specs] = await Promise.all([
         globby(globs),
@@ -342,6 +351,12 @@ export async function generateApis(globs: string[], options: ApiGenerationOption
             // If the spec has been explicitly superceded, skip it.
             // TODO: In future, accept it, if it adds some distinct paths?
             if (spec.info['x-preferred'] === false) return;
+
+            const specId = idFromSpec(spec);
+
+            // To work around some awkward spec overlaps, in some cases we drop specs from the index
+            // unilaterally, to effectively override our 'preferred' version as the
+            if (IGNORED_SPEC_IDS.includes(specId)) return;
 
             const { servers } = spec;
             const serverUrls = _(servers!)
@@ -381,8 +396,6 @@ export async function generateApis(globs: string[], options: ApiGenerationOption
                 .map((url) => url.replace(/^(https?:)?\/\//, '').toLowerCase())
                 .uniq()
                 .valueOf();
-
-            const specId = idFromSpec(spec);
 
             // Case-insensitively check for duplicate spec ids, and report conflicts:
             const existingSpecSource = specIds[specId.toLowerCase()];
