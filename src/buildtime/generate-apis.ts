@@ -392,6 +392,11 @@ export async function generateApis(globs: string[], options: ApiGenerationOption
             specIds[specId.toLowerCase()] = specSource;
 
             serverUrls.forEach((url) => {
+                // The index stores full URLs, so we skip indexing all server URLS that are relative - it's not
+                // really practical or helpful to include or match against these. We want a domain etc. The
+                // specs are still built & available, they're just not discoverable from the index.
+                if (url.startsWith('/')) return;
+
                 if (index[url]) {
                     index[url] = [specId].concat(index[url]);
                 } else {
