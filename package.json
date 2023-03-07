@@ -11,7 +11,7 @@
     "src/"
   ],
   "scripts": {
-    "prepare": "napa APIs-guru/openapi-directory#80105cf:openapi-directory",
+    "prepare": "napa APIs-guru/openapi-directory#54533f4:openapi-directory",
     "use-openapi:main": "napa APIs-guru/openapi-directory#main:openapi-directory",
     "prepack": "npm run build",
     "build": "tsc && node dist/buildtime/build-all.js",
