@@ -333,6 +333,31 @@ const IGNORED_SPEC_IDS = [
     'github.com/api.github.com.2022-11-28'
 ];
 
+// For some specs, we do want to include the spec in the collection, but the server URLs shouldn't
+// be indexed, because they're not valid public URLs. For example, relative URLs, localhost/local
+// network URLs, etc. The specs can still be required by id, where required, it's just that they're
+// ambiguous enough that looking up these addresses in the index shouldn't return these APIs.
+function shouldIndexUrl(url: string) {
+    if (!url) return false; // Bizarrely, yes, some specs list an empty server URL
+    if (url.startsWith('/')) return false; // Purely relative URLs aren't indexable
+
+    // Make protocol-less URLs (common from Swagger?) parseable:
+    if (!url.match(/^http(s)?:\/\//)) url = `https://${url}`;
+
+    try {
+        const parsedUrl = new URL(url);
+
+        return parsedUrl.hostname !== 'localhost' && // Localhost URLs
+            !parsedUrl.hostname.endsWith('.localhost') &&
+            !parsedUrl.hostname.endsWith('.local') && // mDNS local addresses
+            !parsedUrl.hostname.match(/^(127|10|192|0)\.\d+\.\d+\.\d+$/) && // Local network ips
+            parsedUrl.hostname.includes('.'); // Local-only hostnames
+    } catch (e) {
+        console.log('Failed to parse', url);
+        return false; // If it's not a parseable URL, it's definitely not indexable
+    }
+}
+
 export async function generateApis(globs: string[], options: ApiGenerationOptions = {}) {
     const [specs] = await Promise.all([
         globby(globs),
@@ -405,10 +430,7 @@ export async function generateApis(globs: string[], options: ApiGenerationOption
             specIds[specId.toLowerCase()] = specSource;
 
             serverUrls.forEach((url) => {
-                // The index stores full URLs, so we skip indexing all server URLS that are relative - it's not
-                // really practical or helpful to include or match against these. We want a domain etc. The
-                // specs are still built & available, they're just not discoverable from the index.
-                if (url.startsWith('/')) return;
+                if (!shouldIndexUrl(url)) return; // Skip adding this spec to the index
 
                 if (index[url]) {
                     index[url] = [specId].concat(index[url]);
