@@ -1,4 +1,4 @@
-# An OpenAPI Directory for JS [![Travis Build Status](https://img.shields.io/travis/httptoolkit/openapi-directory-js.svg)](https://travis-ci.org/httptoolkit/openapi-directory-js) [![npm version](https://badge.fury.io/js/openapi-directory.svg)](https://badge.fury.io/js/openapi-directory)
+# An OpenAPI Directory for JS [![Build Status](https://github.com/httptoolkit/openapi-directory-js/workflows/CI/badge.svg)](https://github.com/httptoolkit/openapi-directory-js/actions) [![npm version](https://badge.fury.io/js/openapi-directory.svg)](https://badge.fury.io/js/openapi-directory)
 
 > _Part of [HTTP Toolkit](https://httptoolkit.com): powerful tools for building, testing & debugging HTTP(S)_
 
