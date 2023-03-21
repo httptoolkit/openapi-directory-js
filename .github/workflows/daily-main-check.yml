@@ -16,9 +16,6 @@ jobs:
 
       - run: npm ci
 
-      # Switch to the main OpenAPI branch:
-      - run: npm run use-openapi:main
-
       # Check that the tests and overall build all still pass
       - run: npm test
       - run: npm run build

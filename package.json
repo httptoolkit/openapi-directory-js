@@ -11,8 +11,7 @@
     "src/"
   ],
   "scripts": {
-    "prepare": "napa APIs-guru/openapi-directory#54533f4:openapi-directory",
-    "use-openapi:main": "napa APIs-guru/openapi-directory#main:openapi-directory",
+    "prepare": "napa APIs-guru/openapi-directory#main:openapi-directory",
     "prepack": "npm run build",
     "build": "tsc && node dist/buildtime/build-all.js",
     "test": "TS_NODE_FILES=true mocha -r ts-node/register 'test/**/*.spec.ts'"
