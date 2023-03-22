@@ -1,6 +1,10 @@
 name: Npm directory update
 on:
   workflow_dispatch:
+  schedule:
+    # Once per month, on an offset date/time because apparently GHA has
+    # problems with spikes of scheduled jobs at midnight etc.
+    - cron: 30 13 15 * *
 jobs:
   publish:
     name: Build, bump & publish to npm
