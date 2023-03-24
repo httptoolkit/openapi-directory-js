@@ -4,7 +4,7 @@ jobs:
   build:
     name: Build & test
     runs-on: ubuntu-latest
-    container: httptoolkit/act-build-base
+    container: httptoolkit/act-build-base:v3.0.0
     steps:
       - uses: actions/checkout@v2
 
@@ -12,6 +12,6 @@ jobs:
         with:
           node-version: 14
 
-      - run: npm ci --unsafe-perm # Unsafe required for napa in CI
+      - run: npm ci
       - run: npm test # Test the code itself
       - run: npm run build # Confirm that the API specs & index builds successfully
