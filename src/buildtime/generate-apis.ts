@@ -333,6 +333,11 @@ const IGNORED_SPEC_IDS = [
     'github.com/api.github.com.2022-11-28'
 ];
 
+const IGNORED_SPEC_PATHS = [
+    'node_modules/openapi-directory/APIs/ably.net/control/1.0.14/openapi.yaml', // Dupe of ably.net/control/v1
+    'node_modules/openapi-directory/APIs/visma.net/1.0.14.784/openapi.yaml' // Old & conflicting with Visma 9.0 spec
+];
+
 // For some specs, we do want to include the spec in the collection, but the server URLs shouldn't
 // be indexed, because they're not valid public URLs. For example, relative URLs, localhost/local
 // network URLs, etc. The specs can still be required by id, where required, it's just that they're
@@ -381,7 +386,7 @@ export async function generateApis(globs: string[], options: ApiGenerationOption
 
             // To work around some awkward spec overlaps, in some cases we drop specs from the index
             // unilaterally, to effectively override our 'preferred' version as the
-            if (IGNORED_SPEC_IDS.includes(specId)) return;
+            if (IGNORED_SPEC_IDS.includes(specId) || IGNORED_SPEC_PATHS.includes(specSource)) return;
 
             const { servers } = spec;
             const serverUrls = _(servers!)
